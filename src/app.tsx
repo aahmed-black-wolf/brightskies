@@ -18,11 +18,7 @@ import {
   TExecutionLog,
 } from "./types";
 import { fetchNodeTypes } from "./utils/api";
-import {
-  isValidConnection,
-  getExecutionOrder,
-  simulateNodeExecution,
-} from "./utils/pipeline";
+import { getExecutionOrder, simulateNodeExecution } from "./utils/pipeline";
 import { NodePalette } from "./components/node-palette";
 import { PipelineCanvas } from "./components/pipeline-canvas";
 import { ExecutionLog } from "./components/execution-log";

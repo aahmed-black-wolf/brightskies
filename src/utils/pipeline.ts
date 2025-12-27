@@ -1,4 +1,4 @@
-import { PipelineNode, PipelineEdge, ExecutionLog } from '../types';
+import { TPipelineNode, TPipelineEdge, TExecutionLog } from "../types";
 
 /**
  * Validates if a connection is valid (no cycles, no self-loops)
@@ -6,7 +6,7 @@ import { PipelineNode, PipelineEdge, ExecutionLog } from '../types';
 export function isValidConnection(
   sourceId: string,
   targetId: string,
-  edges: PipelineEdge[]
+  edges: TPipelineEdge[]
 ): boolean {
   // Prevent self-loops
   if (sourceId === targetId) {
@@ -40,8 +40,8 @@ export function isValidConnection(
   }
 
   // Temporarily add the new edge to check for cycles
-  const tempEdges = [...edges, { id: '', source: sourceId, target: targetId }];
-  
+  const tempEdges = [...edges, { id: "", source: sourceId, target: targetId }];
+
   // Check if adding this edge creates a cycle
   const graph: Record<string, string[]> = {};
   tempEdges.forEach((edge) => {
@@ -53,7 +53,7 @@ export function isValidConnection(
 
   visited.clear();
   recStack.clear();
-  
+
   return !hasCycle(sourceId);
 }
 
@@ -61,8 +61,8 @@ export function isValidConnection(
  * Performs topological sort to determine execution order
  */
 export function getExecutionOrder(
-  nodes: PipelineNode[],
-  edges: PipelineEdge[]
+  nodes: TPipelineNode[],
+  edges: TPipelineEdge[]
 ): string[] {
   const nodeIds = new Set(nodes.map((n) => n.id));
   const inDegree: Record<string, number> = {};
@@ -107,7 +107,7 @@ export function getExecutionOrder(
 
   // If we couldn't process all nodes, there's a cycle
   if (executionOrder.length !== nodes.length) {
-    throw new Error('Pipeline contains cycles or disconnected nodes');
+    throw new Error("Pipeline contains cycles or disconnected nodes");
   }
 
   return executionOrder;
@@ -120,12 +120,12 @@ export function simulateNodeExecution(
   nodeId: string,
   nodeName: string,
   nodeType: string
-): ExecutionLog {
+): TExecutionLog {
   const messages: Record<string, string> = {
-    'Data Source': `Data Source "${nodeName}" processed 100 records`,
-    'Transformer': `Transformer "${nodeName}" applied transformation`,
-    'Model': `Model "${nodeName}" generated predictions`,
-    'Sink': `Sink "${nodeName}" saved results`,
+    "Data Source": `Data Source "${nodeName}" processed 100 records`,
+    Transformer: `Transformer "${nodeName}" applied transformation`,
+    Model: `Model "${nodeName}" generated predictions`,
+    Sink: `Sink "${nodeName}" saved results`,
   };
 
   const message = messages[nodeType] || `Node "${nodeName}" executed`;
@@ -137,4 +137,3 @@ export function simulateNodeExecution(
     message,
   };
 }
-
