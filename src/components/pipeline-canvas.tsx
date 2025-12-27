@@ -8,6 +8,7 @@ import ReactFlow, {
   Connection,
   MarkerType,
   ReactFlowInstance,
+  ConnectionMode,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { TPipelineNode, TPipelineEdge } from "../types";
@@ -27,7 +28,6 @@ interface PipelineCanvasProps {
     nodeType: { id: string; name: string },
     position: { x: number; y: number }
   ) => void;
-  isValidConnection: (sourceId: string, targetId: string) => boolean;
 }
 
 export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
@@ -37,7 +37,6 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
   onEdgesChange,
   onConnect,
   onNodeAdd,
-  isValidConnection,
 }) => {
   const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
 
@@ -124,10 +123,10 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
 
       try {
         const nodeType = JSON.parse(nodeTypeData);
-        
+
         // Calculate position relative to ReactFlow viewport
         let position = { x: 0, y: 0 };
-        
+
         if (reactFlowInstance.current) {
           // Use ReactFlow's screenToFlowPosition for accurate coordinate conversion
           position = reactFlowInstance.current.screenToFlowPosition({
@@ -178,9 +177,9 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
         onEdgesChange={handleEdgesChange}
         onConnect={handleConnect}
         onInit={onInit}
+        connectionMode={ConnectionMode.Loose}
         nodeTypes={nodeTypes}
         fitView
-        connectionMode="loose"
         snapToGrid={true}
         snapGrid={[20, 20]}
       >
