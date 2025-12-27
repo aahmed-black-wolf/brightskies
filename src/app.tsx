@@ -1,5 +1,15 @@
 import React, { useState, useCallback } from "react";
-import { Node, Edge, Connection } from "reactflow";
+import { 
+  Node, 
+  Edge, 
+  Connection, 
+  applyNodeChanges, 
+  applyEdgeChanges, 
+  NodeChange, 
+  EdgeChange, 
+  addEdge,
+  MarkerType 
+} from "reactflow";
 import { useQuery } from "@tanstack/react-query";
 import {
   TNodeType,
@@ -30,8 +40,8 @@ function App() {
     queryFn: fetchNodeTypes,
   });
 
-  const [nodes, setNodes] = useState<TPipelineNode[]>([]);
-  const [edges, setEdges] = useState<TPipelineEdge[]>([]);
+  const [nodes, setNodes] = useState<Node[]>([]);
+  const [edges, setEdges] = useState<Edge[]>([]);
   const [logs, setLogs] = useState<TExecutionLog[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
 
@@ -50,82 +60,51 @@ function App() {
   // Handle node addition
   const handleNodeAdd = useCallback(
     (nodeType: TNodeType, position: { x: number; y: number }) => {
-      const newNode: TPipelineNode = {
+      const newNode: Node = {
         id: `node-${++nodeIdCounter}`,
-        type: nodeType.name,
-        name: `${nodeType.name} ${nodeIdCounter}`,
+        type: "custom",
         position,
         data: {
+          label: `${nodeType.name} ${nodeIdCounter}`,
+          type: nodeType.name,
           status: "idle",
         },
       };
-      // Use functional update for immediate state update
-      setNodes((prev) => {
-        // Check if node already exists to prevent duplicates
-        if (prev.some((n) => n.id === newNode.id)) {
-          return prev;
-        }
-        return [...prev, newNode];
-      });
+      setNodes((nds) => [...nds, newNode]);
     },
     []
   );
 
-  // Handle node changes (position updates)
-  const handleNodesChange = useCallback((reactFlowNodes: Node[]) => {
-    setNodes((prev) =>
-      prev.map((node) => {
-        const updated = reactFlowNodes.find((n) => n.id === node.id);
-        if (updated) {
-          return { ...node, position: updated.position };
-        }
-        return node;
-      })
-    );
-  }, []);
+  // Handle node changes
+  const handleNodesChange = useCallback(
+    (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
+    []
+  );
 
   // Handle edge changes
-  const handleEdgesChange = useCallback((reactFlowEdges: Edge[]) => {
-    setEdges(
-      reactFlowEdges.map((edge) => ({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        sourceHandle: edge.sourceHandle || undefined,
-        targetHandle: edge.targetHandle || undefined,
-      }))
-    );
-  }, []);
+  const handleEdgesChange = useCallback(
+    (changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)),
+    []
+  );
 
   // Handle new connections
   const handleConnect = useCallback(
     (connection: Connection) => {
-      if (!connection.source || !connection.target) return;
-
-      // Validate connection before creating edge
-      if (!isValidConnection(connection.source, connection.target, edges)) {
-        alert("Invalid connection: This would create a cycle or self-loop.");
-        return;
-      }
-
-      const newEdge: TPipelineEdge = {
-        id: `edge-${++edgeIdCounter}`,
-        source: connection.source,
-        target: connection.target,
-        sourceHandle: connection.sourceHandle || "output",
-        targetHandle: connection.targetHandle || "input",
-      };
-      setEdges((prev) => [...prev, newEdge]);
+      setEdges((eds) => 
+        addEdge(
+          { 
+            ...connection, 
+            id: `edge-${++edgeIdCounter}`,
+            sourceHandle: connection.sourceHandle || "output",
+            targetHandle: connection.targetHandle || "input",
+            markerEnd: { type: MarkerType.ArrowClosed },
+            style: { strokeWidth: 2 }
+          }, 
+          eds
+        )
+      );
     },
-    [edges]
-  );
-
-  // Validate connection helper
-  const validateConnection = useCallback(
-    (sourceId: string, targetId: string) => {
-      return isValidConnection(sourceId, targetId, edges);
-    },
-    [edges]
+    []
   );
 
   // Execute pipeline
@@ -147,8 +126,24 @@ function App() {
     );
 
     try {
+      // Map back to domain types for utility functions
+      const pipelineNodes: TPipelineNode[] = nodes.map(n => ({
+        id: n.id,
+        type: n.data.type,
+        name: n.data.label,
+        position: n.position,
+        data: { status: n.data.status }
+      }));
+      const pipelineEdges: TPipelineEdge[] = edges.map(e => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        sourceHandle: e.sourceHandle || undefined,
+        targetHandle: e.targetHandle || undefined
+      }));
+
       // Get execution order
-      const executionOrder = getExecutionOrder(nodes, edges);
+      const executionOrder = getExecutionOrder(pipelineNodes, pipelineEdges);
 
       // Execute nodes in order
       for (let i = 0; i < executionOrder.length; i++) {
@@ -170,7 +165,7 @@ function App() {
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
         // Generate log
-        const log = simulateNodeExecution(node.id, node.name, node.type);
+        const log = simulateNodeExecution(node.id, node.data.label, node.data.type);
         setLogs((prev) => [...prev, log]);
 
         // Set node to completed
@@ -231,7 +226,6 @@ function App() {
           onEdgesChange={handleEdgesChange}
           onConnect={handleConnect}
           onNodeAdd={handleNodeAdd}
-          isValidConnection={validateConnection}
         />
         <ExecutionLog logs={logs} isExecuting={isExecuting} />
       </div>

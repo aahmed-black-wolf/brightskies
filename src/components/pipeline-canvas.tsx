@@ -6,12 +6,12 @@ import ReactFlow, {
   Controls,
   MiniMap,
   Connection,
-  MarkerType,
   ReactFlowInstance,
   ConnectionMode,
+  NodeChange,
+  EdgeChange,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { TPipelineNode, TPipelineEdge } from "../types";
 import { CustomNode } from "./custom-node";
 
 const nodeTypes = {
@@ -19,10 +19,10 @@ const nodeTypes = {
 };
 
 interface PipelineCanvasProps {
-  nodes: TPipelineNode[];
-  edges: TPipelineEdge[];
-  onNodesChange: (nodes: Node[]) => void;
-  onEdgesChange: (edges: Edge[]) => void;
+  nodes: Node[];
+  edges: Edge[];
+  onNodesChange: (changes: NodeChange[]) => void;
+  onEdgesChange: (changes: EdgeChange[]) => void;
   onConnect: (connection: Connection) => void;
   onNodeAdd: (
     nodeType: { id: string; name: string },
@@ -40,78 +40,17 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
 }) => {
   const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
 
-  // Convert PipelineEdges to React Flow Edges
-  const reactFlowEdges: Edge[] = useMemo(
-    () =>
-      edges.map((edge) => ({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        sourceHandle: edge.sourceHandle || "output",
-        targetHandle: edge.targetHandle || "input",
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-        },
-        style: { strokeWidth: 2 },
-      })),
-    [edges]
-  );
-
-  // Convert PipelineNodes to React Flow Nodes
-  const reactFlowNodes: Node[] = useMemo(
+  // Inject current edges into node data so handles can check for connections
+  const nodesWithEdges = useMemo(
     () =>
       nodes.map((node) => ({
-        id: node.id,
-        type: "custom",
-        position: node.position,
+        ...node,
         data: {
-          label: node.name,
-          type: node.type,
-          status: node.data?.status || "idle",
-          edges: reactFlowEdges,
+          ...node.data,
+          edges: edges,
         },
       })),
-    [nodes, reactFlowEdges]
-  );
-
-  // Handle node changes (position updates)
-  const handleNodesChange = useCallback(
-    (changes: any) => {
-      const updatedNodes = reactFlowNodes.map((node) => {
-        const change = changes.find((c: any) => c.id === node.id);
-        if (change && change.type === "position" && change.position) {
-          return { ...node, position: change.position };
-        }
-        return node;
-      });
-      onNodesChange(updatedNodes);
-    },
-    [reactFlowNodes, onNodesChange]
-  );
-
-  // Handle edge changes
-  const handleEdgesChange = useCallback(
-    (changes: any) => {
-      // React Flow handles edge changes internally, we just need to sync
-      const updatedEdges = reactFlowEdges.map((edge) => {
-        const change = changes.find((c: any) => c.id === edge.id);
-        if (change) {
-          return { ...edge, ...change };
-        }
-        return edge;
-      });
-      onEdgesChange(updatedEdges);
-    },
-    [reactFlowEdges, onEdgesChange]
-  );
-
-  // Handle new connections
-  const handleConnect = useCallback(
-    (connection: Connection) => {
-      if (!connection.source || !connection.target) return;
-      onConnect(connection);
-    },
-    [onConnect]
+    [nodes, edges]
   );
 
   // Handle drop from palette
@@ -128,25 +67,12 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
         let position = { x: 0, y: 0 };
 
         if (reactFlowInstance.current) {
-          // Use ReactFlow's screenToFlowPosition for accurate coordinate conversion
           position = reactFlowInstance.current.screenToFlowPosition({
             x: event.clientX,
             y: event.clientY,
           });
-        } else {
-          // Fallback: calculate relative to the ReactFlow container
-          const reactFlowBounds = (event.target as Element)
-            .closest(".react-flow")
-            ?.getBoundingClientRect();
-          if (reactFlowBounds) {
-            position = {
-              x: event.clientX - reactFlowBounds.left - 50,
-              y: event.clientY - reactFlowBounds.top - 50,
-            };
-          }
         }
 
-        // Call the parent handler immediately to update state
         onNodeAdd(nodeType, position);
       } catch (error) {
         console.error("Failed to parse node type data:", error);
@@ -171,15 +97,16 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
       onDragOver={onDragOver}
     >
       <ReactFlow
-        nodes={reactFlowNodes}
-        edges={reactFlowEdges}
-        onNodesChange={handleNodesChange}
-        onEdgesChange={handleEdgesChange}
-        onConnect={handleConnect}
+        nodes={nodesWithEdges}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
         onInit={onInit}
         connectionMode={ConnectionMode.Loose}
         nodeTypes={nodeTypes}
-        fitView
+        nodesDraggable={true}
+        nodesConnectable={true}
         snapToGrid={true}
         snapGrid={[20, 20]}
       >
