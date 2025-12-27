@@ -2,6 +2,8 @@
 
 A visual pipeline editor built with React and React Flow that allows users to create, connect, and execute AI pipeline nodes through an intuitive drag-and-drop interface.
 
+> 📖 For detailed design decisions and implementation approach, see [DESIGN.md](./DESIGN.md)
+
 ## Prerequisites
 
 - **Node.js**: v18 or higher (v18-alpine is used in Docker)
