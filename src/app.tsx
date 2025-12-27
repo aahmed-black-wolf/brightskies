@@ -1,14 +1,14 @@
 import React, { useState, useCallback } from "react";
-import { 
-  Node, 
-  Edge, 
-  Connection, 
-  applyNodeChanges, 
-  applyEdgeChanges, 
-  NodeChange, 
-  EdgeChange, 
+import {
+  Node,
+  Edge,
+  Connection,
+  applyNodeChanges,
+  applyEdgeChanges,
+  NodeChange,
+  EdgeChange,
   addEdge,
-  MarkerType 
+  MarkerType,
 } from "reactflow";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -77,35 +77,34 @@ function App() {
 
   // Handle node changes
   const handleNodesChange = useCallback(
-    (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
+    (changes: NodeChange[]) =>
+      setNodes((nds) => applyNodeChanges(changes, nds)),
     []
   );
 
   // Handle edge changes
   const handleEdgesChange = useCallback(
-    (changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)),
+    (changes: EdgeChange[]) =>
+      setEdges((eds) => applyEdgeChanges(changes, eds)),
     []
   );
 
   // Handle new connections
-  const handleConnect = useCallback(
-    (connection: Connection) => {
-      setEdges((eds) => 
-        addEdge(
-          { 
-            ...connection, 
-            id: `edge-${++edgeIdCounter}`,
-            sourceHandle: connection.sourceHandle || "output",
-            targetHandle: connection.targetHandle || "input",
-            markerEnd: { type: MarkerType.ArrowClosed },
-            style: { strokeWidth: 2 }
-          }, 
-          eds
-        )
-      );
-    },
-    []
-  );
+  const handleConnect = useCallback((connection: Connection) => {
+    setEdges((eds) =>
+      addEdge(
+        {
+          ...connection,
+          id: `edge-${++edgeIdCounter}`,
+          sourceHandle: connection.sourceHandle || "output",
+          targetHandle: connection.targetHandle || "input",
+          markerEnd: { type: MarkerType.ArrowClosed },
+          style: { strokeWidth: 2 },
+        },
+        eds
+      )
+    );
+  }, []);
 
   // Execute pipeline
   const handleExecute = useCallback(async () => {
@@ -127,19 +126,19 @@ function App() {
 
     try {
       // Map back to domain types for utility functions
-      const pipelineNodes: TPipelineNode[] = nodes.map(n => ({
+      const pipelineNodes: TPipelineNode[] = nodes.map((n) => ({
         id: n.id,
         type: n.data.type,
         name: n.data.label,
         position: n.position,
-        data: { status: n.data.status }
+        data: { status: n.data.status },
       }));
-      const pipelineEdges: TPipelineEdge[] = edges.map(e => ({
+      const pipelineEdges: TPipelineEdge[] = edges.map((e) => ({
         id: e.id,
         source: e.source,
         target: e.target,
         sourceHandle: e.sourceHandle || undefined,
-        targetHandle: e.targetHandle || undefined
+        targetHandle: e.targetHandle || undefined,
       }));
 
       // Get execution order
@@ -165,7 +164,11 @@ function App() {
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
         // Generate log
-        const log = simulateNodeExecution(node.id, node.data.label, node.data.type);
+        const log = simulateNodeExecution(
+          node.id,
+          node.data.label,
+          node.data.type
+        );
         setLogs((prev) => [...prev, log]);
 
         // Set node to completed

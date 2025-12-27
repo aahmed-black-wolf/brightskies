@@ -28,9 +28,9 @@ export function isValidConnection(
     visited.add(nodeId);
     recStack.add(nodeId);
 
-    const outgoingEdges = edges.filter((e) => e.source === nodeId);
-    for (const edge of outgoingEdges) {
-      if (hasCycle(edge.target)) {
+    const neighbors = graph[nodeId] || [];
+    for (const neighbor of neighbors) {
+      if (hasCycle(neighbor)) {
         return true;
       }
     }
