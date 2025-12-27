@@ -92,7 +92,7 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
 
   return (
     <div
-      className="flex-1 h-full bg-gray-50"
+      className="flex-1 h-full min-h-[400px] bg-gray-50 touch-none"
       onDrop={onDrop}
       onDragOver={onDragOver}
     >
@@ -109,6 +109,7 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
         nodesConnectable={true}
         snapToGrid={true}
         snapGrid={[20, 20]}
+        fitView
       >
         <Background />
         <Controls />

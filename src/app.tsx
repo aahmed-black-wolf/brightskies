@@ -75,6 +75,19 @@ function App() {
     []
   );
 
+  // Handle node click from palette (mobile friendly)
+  const handleNodeClick = useCallback(
+    (nodeType: TNodeType) => {
+      // Add node at a default position or slightly offset from existing nodes
+      const position = {
+        x: 100 + Math.random() * 50,
+        y: 100 + Math.random() * 50,
+      };
+      handleNodeAdd(nodeType, position);
+    },
+    [handleNodeAdd]
+  );
+
   // Handle node changes
   const handleNodesChange = useCallback(
     (changes: NodeChange[]) =>
@@ -198,7 +211,7 @@ function App() {
   }, [nodes, edges]);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden">
       <header className="flex flex-col gap-3 items-start px-6 py-4 bg-white border-b border-gray-300 shadow-sm md:flex-row md:justify-between md:items-center">
         <h1 className="text-2xl text-gray-800 m-0">AI Pipeline Editor</h1>
         <button
@@ -221,6 +234,7 @@ function App() {
               : null
           }
           onDragStart={handleDragStart}
+          onNodeClick={handleNodeClick}
         />
         <PipelineCanvas
           nodes={nodes}
